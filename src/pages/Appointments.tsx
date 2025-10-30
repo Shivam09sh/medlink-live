@@ -1,112 +1,143 @@
-import { useState } from "react";
-import { Plus } from "lucide-react";
+import React, { useState } from "react";
+import { useAppointments } from "@/context/AppointmentsContext";
+import { Plus, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 
+interface NewAppointment {
+  patient: string;
+  date: string;
+  time: string;
+  reason: string;
+}
+
 export default function Appointments() {
+  const { appointments, addAppointment } = useAppointments();
   const [open, setOpen] = useState(false);
+  const [viewOpen, setViewOpen] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
+  const [newAppointment, setNewAppointment] = useState<NewAppointment>({
+    patient: "",
+    date: "",
+    time: "",
+    reason: "",
+  });
+
+  const handleSave = () => {
+    if (!newAppointment.patient || !newAppointment.date || !newAppointment.time) {
+      alert("Please fill all required fields");
+      return;
+    }
+
+    const formattedTime = new Date(`1970-01-01T${newAppointment.time}`).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    addAppointment({
+      patient: newAppointment.patient,
+      date: newAppointment.date,
+      time: formattedTime,
+      type: newAppointment.reason || "General",
+      status: "Pending",
+    });
+
+    setNewAppointment({ patient: "", date: "", time: "", reason: "" });
+    setOpen(false);
+  };
 
   return (
     <div className="p-8">
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold text-foreground">Appointments</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Appointments</h1>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button className="gap-2">
-              <Plus className="w-4 h-4" />
-              New Appointment
+            <Button>
+              <Plus className="mr-2 h-4 w-4" /> Add Appointment
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-md">
+          <DialogContent>
             <DialogHeader>
-              <DialogTitle>Create Appointment</DialogTitle>
+              <DialogTitle>New Appointment</DialogTitle>
             </DialogHeader>
-            <div className="space-y-4 pt-4">
+            <div className="space-y-4 mt-4">
               <div>
-                <Label htmlFor="patient">Patient</Label>
-                <Select>
-                  <SelectTrigger id="patient">
-                    <SelectValue placeholder="Select a patient" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1">Robert Chen</SelectItem>
-                    <SelectItem value="2">Lisa Ray</SelectItem>
-                    <SelectItem value="3">James Wilson</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label>Patient Name</Label>
+                <Input
+                  value={newAppointment.patient}
+                  onChange={(e) =>
+                    setNewAppointment({ ...newAppointment, patient: e.target.value })
+                  }
+                />
               </div>
               <div>
-                <Label htmlFor="date">Date</Label>
-                <Input id="date" type="date" />
+                <Label>Date</Label>
+                <Input
+                  type="date"
+                  value={newAppointment.date}
+                  onChange={(e) => setNewAppointment({ ...newAppointment, date: e.target.value })}
+                />
               </div>
               <div>
-                <Label htmlFor="time">Time</Label>
-                <Input id="time" type="time" />
+                <Label>Time</Label>
+                <Input
+                  type="time"
+                  value={newAppointment.time}
+                  onChange={(e) => setNewAppointment({ ...newAppointment, time: e.target.value })}
+                />
               </div>
               <div>
-                <Label htmlFor="reason">Reason</Label>
-                <Textarea id="reason" placeholder="Enter appointment reason" />
+                <Label>Reason</Label>
+                <Textarea
+                  value={newAppointment.reason}
+                  onChange={(e) => setNewAppointment({ ...newAppointment, reason: e.target.value })}
+                />
               </div>
-              <div className="flex gap-2 pt-4">
-                <Button variant="outline" className="flex-1" onClick={() => setOpen(false)}>
-                  Cancel
-                </Button>
-                <Button className="flex-1">Save Appointment</Button>
-              </div>
+              <Button onClick={handleSave} className="w-full">
+                Save Appointment
+              </Button>
             </div>
           </DialogContent>
         </Dialog>
       </div>
 
       <Card className="p-6">
-        <h2 className="text-xl font-semibold mb-6">Appointment List</h2>
-        <div className="overflow-x-auto">
-          <table className="w-full">
+        {appointments.length === 0 ? (
+          <p className="text-center text-muted-foreground py-6">No appointments yet.</p>
+        ) : (
+          <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b">
-                <th className="text-left py-3 px-4 text-sm font-semibold text-muted-foreground">Patient</th>
-                <th className="text-left py-3 px-4 text-sm font-semibold text-muted-foreground">Date</th>
-                <th className="text-left py-3 px-4 text-sm font-semibold text-muted-foreground">Time</th>
-                <th className="text-left py-3 px-4 text-sm font-semibold text-muted-foreground">Type</th>
-                <th className="text-left py-3 px-4 text-sm font-semibold text-muted-foreground">Status</th>
-                <th className="text-left py-3 px-4 text-sm font-semibold text-muted-foreground">Actions</th>
+              <tr>
+                <th>Patient</th>
+                <th>Date</th>
+                <th>Time</th>
+                <th>Type</th>
+                <th>Status</th>
               </tr>
             </thead>
             <tbody>
-              {[
-                { patient: "Sarah Johnson", date: "2025-10-30", time: "09:00 AM", type: "Check-up", status: "Confirmed" },
-                { patient: "Michael Chen", date: "2025-10-30", time: "10:30 AM", type: "Follow-up", status: "Confirmed" },
-                { patient: "Emma Wilson", date: "2025-10-30", time: "02:00 PM", type: "Consultation", status: "Pending" },
-              ].map((apt, idx) => (
-                <tr key={idx} className="border-b hover:bg-secondary/50 transition-colors">
-                  <td className="py-4 px-4 font-medium">{apt.patient}</td>
-                  <td className="py-4 px-4 text-muted-foreground">{apt.date}</td>
-                  <td className="py-4 px-4 text-muted-foreground">{apt.time}</td>
-                  <td className="py-4 px-4 text-muted-foreground">{apt.type}</td>
-                  <td className="py-4 px-4">
-                    <span
-                      className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
-                        apt.status === "Confirmed"
-                          ? "bg-success/10 text-success"
-                          : "bg-warning/10 text-warning"
-                      }`}
-                    >
-                      {apt.status}
-                    </span>
-                  </td>
-                  <td className="py-4 px-4">
-                    <Button variant="ghost" size="sm">View</Button>
-                  </td>
+              {appointments.map((apt, index) => (
+                <tr key={index}>
+                  <td>{apt.patient}</td>
+                  <td>{apt.date}</td>
+                  <td>{apt.time}</td>
+                  <td>{apt.type}</td>
+                  <td>{apt.status}</td>
                 </tr>
               ))}
             </tbody>
           </table>
-        </div>
+        )}
       </Card>
     </div>
   );

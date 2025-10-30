@@ -3,9 +3,15 @@ import StatCard from "@/components/StatCard";
 import RoleBadges from "@/components/RoleBadges";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
+import { useAppointments } from "@/context/AppointmentsContext"; // ✅ use your context here
 
 export default function Dashboard() {
+  // ✅ Get appointments from context
+  const { appointments } = useAppointments();
+
+  // ✅ Filter upcoming appointments dynamically
+  const upcomingAppointments = appointments.filter((apt) => apt.status !== "Completed");
+
   return (
     <div className="p-8">
       {/* Header */}
@@ -46,8 +52,10 @@ export default function Dashboard() {
         />
         <StatCard
           title="Today's Appointments"
-          value="24"
-          subtitle="Completed: 16/24"
+          value={appointments.length.toString()}
+          subtitle={`Completed: ${
+            appointments.filter((a) => a.status === "Completed").length
+          }/${appointments.length}`}
           icon={Calendar}
           iconColor="bg-green-100 text-success"
         />
@@ -96,40 +104,41 @@ export default function Dashboard() {
           </div>
         </Card>
 
-        {/* Upcoming Appointments */}
+        {/* ✅ Upcoming Appointments (Dynamic) */}
         <Card className="p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-semibold text-foreground">Upcoming Appointments</h2>
             <button className="text-sm text-primary hover:underline">View All</button>
           </div>
-          
-          <div className="space-y-4">
-            {[
-              { patient: "Sarah Johnson", time: "09:00 AM", type: "Check-up", status: "confirmed" },
-              { patient: "Michael Chen", time: "10:30 AM", type: "Follow-up", status: "confirmed" },
-              { patient: "Emma Wilson", time: "02:00 PM", type: "Consultation", status: "pending" },
-              { patient: "James Brown", time: "03:30 PM", type: "Surgery", status: "confirmed" },
-            ].map((apt, idx) => (
-              <div key={idx} className="p-4 rounded-lg border hover:border-primary transition-colors">
-                <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <p className="font-medium text-foreground">{apt.patient}</p>
-                    <p className="text-sm text-muted-foreground">{apt.type}</p>
+
+          {upcomingAppointments.length === 0 ? (
+            <p className="text-muted-foreground text-sm text-center py-8">
+              No upcoming appointments.
+            </p>
+          ) : (
+            <div className="space-y-4">
+              {upcomingAppointments.map((apt, idx) => (
+                <div key={idx} className="p-4 rounded-lg border hover:border-primary transition-colors">
+                  <div className="flex items-start justify-between mb-2">
+                    <div>
+                      <p className="font-medium text-foreground">{apt.patient}</p>
+                      <p className="text-sm text-muted-foreground">{apt.type}</p>
+                    </div>
+                    <Badge
+                      variant={apt.status === "Confirmed" ? "default" : "secondary"}
+                      className={apt.status === "Confirmed" ? "bg-success" : ""}
+                    >
+                      {apt.status}
+                    </Badge>
                   </div>
-                  <Badge 
-                    variant={apt.status === "confirmed" ? "default" : "secondary"}
-                    className={apt.status === "confirmed" ? "bg-success" : ""}
-                  >
-                    {apt.status}
-                  </Badge>
+                  <p className="text-sm text-muted-foreground flex items-center gap-2">
+                    <Calendar className="w-4 h-4" />
+                    {apt.date} — {apt.time}
+                  </p>
                 </div>
-                <p className="text-sm text-muted-foreground flex items-center gap-2">
-                  <Calendar className="w-4 h-4" />
-                  {apt.time}
-                </p>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </Card>
       </div>
     </div>
